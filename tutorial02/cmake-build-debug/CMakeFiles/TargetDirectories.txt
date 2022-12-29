@@ -1,4 +1,0 @@
-/tmp/tmp.veYKCVOKbr/tutorial02/cmake-build-debug/CMakeFiles/leptjson.dir
-/tmp/tmp.veYKCVOKbr/tutorial02/cmake-build-debug/CMakeFiles/leptjson_test.dir
-/tmp/tmp.veYKCVOKbr/tutorial02/cmake-build-debug/CMakeFiles/edit_cache.dir
-/tmp/tmp.veYKCVOKbr/tutorial02/cmake-build-debug/CMakeFiles/rebuild_cache.dir
