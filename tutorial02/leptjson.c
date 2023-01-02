@@ -61,9 +61,6 @@ static int lept_parse_number(lept_context* c, lept_value* v) {
             return LEPT_PARSE_INVALID_VALUE;
         }
         for (p++; ISDIGIT(*p); p++) {}
-        if (*p != '\0') {
-            return LEPT_PARSE_INVALID_VALUE;
-        }
     }
 
     if (*p != '\0') {
