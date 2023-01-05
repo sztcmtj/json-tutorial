@@ -91,19 +91,79 @@ static int lept_parse_number(lept_context* c, lept_value* v) {
 }
 
 static const char* lept_parse_hex4(const char* p, unsigned* u) {
-    /* \TODO */
+    *u = 0;
+    int i;
+    for (i = 0; i < 4; i++) {
+        switch (*p++) {
+            case '0':
+                *u = (*u << 4) | 0x0; break;
+            case '1':
+                *u = (*u << 4) | 0x1; break;
+            case '2':
+                *u = (*u << 4) | 0x2; break;
+            case '3':
+                *u = (*u << 4) | 0x3; break;
+            case '4':
+                *u = (*u << 4) | 0x4; break;
+            case '5':
+                *u = (*u << 4) | 0x5; break;
+            case '6':
+                *u = (*u << 4) | 0x6; break;
+            case '7':
+                *u = (*u << 4) | 0x7; break;
+            case '8':
+                *u = (*u << 4) | 0x8; break;
+            case '9':
+                *u = (*u << 4) | 0x9; break;
+            case 'A':
+            case 'a':
+                *u = (*u << 4) | 0xA; break;
+            case 'B':
+            case 'b':
+                *u = (*u << 4) | 0xB; break;
+            case 'C':
+            case 'c':
+                *u = (*u << 4) | 0xC; break;
+            case 'D':
+            case 'd':
+                *u = (*u << 4) | 0xD; break;
+            case 'E':
+            case 'e':
+                *u = (*u << 4) | 0xE; break;
+            case 'F':
+            case 'f':
+                *u = (*u << 4) | 0xF; break;
+            default:
+                return NULL;
+        }
+    }
     return p;
 }
 
 static void lept_encode_utf8(lept_context* c, unsigned u) {
-    /* \TODO */
+    if (u <= 0x7F) {
+        PUTC(c, u & 0x7F);
+    } else if (u <= 0x7FF) {
+        PUTC(c, 0xC0 | ((u >> 6) & 0x1F));
+        PUTC(c, 0x80 | (u        & 0x3F));
+    } else if (u <= 0xFFFF) {
+        PUTC(c, 0xE0 | ((u >> 12) & 0xF));
+        PUTC(c, 0x80 | ((u >> 6)  & 0x3F));
+        PUTC(c, 0x80 | (u         & 0x3F));
+    } else {
+        assert(u <= 0x10FFFF);
+        PUTC(c, 0xF0 | ((u >> 18) & 0x7));
+        PUTC(c, 0x80 | ((u >> 12) & 0x3F));
+        PUTC(c, 0x80 | ((u >> 6)  & 0x3F));
+        PUTC(c, 0x80 | (u         & 0x3F));
+    }
 }
 
 #define STRING_ERROR(ret) do { c->top = head; return ret; } while(0)
 
 static int lept_parse_string(lept_context* c, lept_value* v) {
     size_t head = c->top, len;
-    unsigned u;
+    unsigned u, u2;
     const char* p;
     EXPECT(c, '\"');
     p = c->json;
@@ -128,7 +188,22 @@ static int lept_parse_string(lept_context* c, lept_value* v) {
                     case 'u':
                         if (!(p = lept_parse_hex4(p, &u)))
                             STRING_ERROR(LEPT_PARSE_INVALID_UNICODE_HEX);
-                        /* \TODO surrogate handling */
+                        if (0xD800 <= u && u <= 0xDBFF) {
+                            /*If u is high surrogate, then parse low surrogate.*/
+                            if (*p++ != '\\') {
+                                return LEPT_PARSE_INVALID_UNICODE_SURROGATE;
+                            }
+                            if (*p++ != 'u') {
+                                return LEPT_PARSE_INVALID_UNICODE_SURROGATE;
+                            }
+                            if (!(p = lept_parse_hex4(p, &u2))) {
+                                STRING_ERROR(LEPT_PARSE_INVALID_UNICODE_HEX);
+                            } else if (0xDC00 <= u2 && u2 <= 0xDFFF) {
+                                u = 0x10000 + (u - 0xD800) * 0x400 + (u2 - 0xDC00);
+                            } else {
+                                return LEPT_PARSE_INVALID_UNICODE_SURROGATE;
+                            }
+                        }
                         lept_encode_utf8(c, u);
                         break;
                     default:
